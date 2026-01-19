@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Electricity Dashboard</title>
+
+  <style>
+    :root {
+      --primary: #1e88e5;
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --text: #333;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 1rem;
+      text-align: center;
+    }
+
+    .dashboard {
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      background: var(--card);
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      margin-top: 0;
+      font-size: 1.1rem;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.5rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 0.4rem;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+    }
+
+    th {
+      background: #f0f0f0;
+    }
+
+    .stat {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    @media (max-width: 600px) {
+      header h1 {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>Electricity Usage Dashboard</h1>
+</header>
+
+<section class="dashboard">
+
+  <div class="card">
+    <h2>Total Users</h2>
+    <div id="totalUsers" class="stat">–</div>
+  </div>
+
+  <div class="card">
+    <h2>Total Consumption (kWh)</h2>
+    <div id="totalKwh" class="stat">–</div>
+  </div>
+
+  <div class="card">
+    <h2>Total Cost ($)</h2>
+    <div id="totalCost" class="stat">–</div>
+  </div>
+
+  <div class="card">
+    <h2>Users</h2>
+    <table id="usersTable">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>City</th>
+          <th>Plan</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Electricity Usage</h2>
+    <table id="usageTable">
+      <thead>
+        <tr>
+          <th>User ID</th>
+          <th>Month</th>
+          <th>kWh</th>
+          <th>Cost ($)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+</section>
+
+<script>
+  async function loadDashboard() {
+    const [users, usages] = await Promise.all([
+      fetch("electricity_users_en.json").then(r => r.json()),
+      fetch("electricity_usages_en.json").then(r => r.json())
+    ]);
+
+    // --- Summary stats ---
+    document.getElementById("totalUsers").textContent = users.length;
+
+    const totalKwh = usages.reduce((sum, u) => sum + u.kwh, 0);
+    const totalCost = usages.reduce((sum, u) => sum + u.cost, 0);
+
+    document.getElementById("totalKwh").textContent = totalKwh.toFixed(0);
+    document.getElementById("totalCost").textContent = totalCost.toFixed(2);
+
+    // --- Users table ---
+    const usersBody = document.querySelector("#usersTable tbody");
+    users.forEach(u => {
+      usersBody.innerHTML += `
+        <tr>
+          <td>${u.name}</td>
+          <td>${u.city}</td>
+          <td>${u.plan}</td>
+        </tr>
+      `;
+    });
+
+    // --- Usage table ---
+    const usageBody = document.querySelector("#usageTable tbody");
+    usages.forEach(u => {
+      usageBody.innerHTML += `
+        <tr>
+          <td>${u.user_id}</td>
+          <td>${u.month}</td>
+          <td>${u.kwh}</td>
+          <td>${u.cost.toFixed(2)}</td>
+        </tr>
+      `;
+    });
+  }
+
+  loadDashboard().catch(err => {
+    alert("Failed to load data. Make sure JSON files are served via a web server.");
+    console.error(err);
+  });
+</script>
+
+</body>
+</html>
