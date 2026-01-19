@@ -150,6 +150,10 @@
       Province:
       <select id="provinceSelect"></select>
     </label>
+    <label>
+        Year:
+        <select id="yearSelect"></select>
+      </label>      
   </section>
 
   <!-- Charts + Table -->
@@ -159,6 +163,11 @@
     </div>
     <div class="card">
         <canvas id="usagePieChart" height="200"></canvas>
+    <div class="card">
+            <h3>Total Electricity Usage Forecast</h3>
+            <canvas id="forecastChart" height="160"></canvas>
+    </div>
+          
     </div>
       
 
@@ -178,9 +187,12 @@
 </main>
 
 <script>
+    let forecastChart;
     let pieChart;
   const USER_FILE = "electricity_users_en.json";
   const USAGE_FILE = "electricity_usages_en.json";
+    let availableYears = [];
+    let selectedYear;
 
   const categories = [
     "residential",
@@ -203,10 +215,141 @@
   ]).then(([users, usage]) => {
     usersData = users;
     usageData = usage.Sheet1;
+    availableYears = [...new Set(usageData.map(r => r.year))]
+  .sort((a, b) => b - a);
+
+    initYearSelector();
+
 
     initProvinceSelector();
+    updateForecastChart();
     updateDashboard("ALL");
   });
+
+  function getTotalUsageByYear() {
+  const yearlyTotals = {};
+
+  usageData.forEach(r => {
+    const y = r.year;
+    if (!yearlyTotals[y]) yearlyTotals[y] = 0;
+
+    categories.forEach(c => {
+      yearlyTotals[y] += r[`${c}_kwh`] || 0;
+    });
+  });
+
+  return Object.entries(yearlyTotals)
+    .map(([year, total]) => ({ year: Number(year), total }))
+    .sort((a, b) => a.year - b.year);
+}
+
+function linearRegression(data) {
+  const n = data.length;
+
+  const sumX = data.reduce((a, d) => a + d.year, 0);
+  const sumY = data.reduce((a, d) => a + d.total, 0);
+  const sumXY = data.reduce((a, d) => a + d.year * d.total, 0);
+  const sumX2 = data.reduce((a, d) => a + d.year * d.year, 0);
+
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+
+  return { slope, intercept };
+}
+
+function predictFuture(data, yearsAhead = 3) {
+  const { slope, intercept } = linearRegression(data);
+  const lastYear = data[data.length - 1].year;
+
+  const future = [];
+  for (let i = 1; i <= yearsAhead; i++) {
+    const year = lastYear + i;
+    future.push({
+      year,
+      total: Math.round(slope * year + intercept)
+    });
+  }
+
+  return future;
+}
+
+function updateForecastChart() {
+  const historical = getTotalUsageByYear();
+  const predicted = predictFuture(historical, 3);
+
+  const labels = [
+    ...historical.map(d => d.year),
+    ...predicted.map(d => d.year)
+  ];
+
+  const historicalData = historical.map(d => d.total);
+  const predictedData = [
+    ...Array(historical.length).fill(null),
+    ...predicted.map(d => d.total)
+  ];
+
+  const ctx = document.getElementById("forecastChart");
+
+  if (forecastChart) forecastChart.destroy();
+
+  forecastChart = new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Actual Usage",
+          data: historicalData,
+          borderWidth: 2,
+          tension: 0.3
+        },
+        {
+          label: "Predicted Usage",
+          data: predictedData,
+          borderDash: [5, 5],
+          borderWidth: 2,
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx =>
+              `${ctx.dataset.label}: ${ctx.raw.toLocaleString()} kWh`
+          }
+        }
+      }
+    }
+  });
+}
+
+
+  function initYearSelector() {
+  const select = document.getElementById("yearSelect");
+
+  select.innerHTML = "";
+
+  availableYears.forEach(y => {
+    const opt = document.createElement("option");
+    opt.value = y;
+    opt.textContent = y;
+    select.appendChild(opt);
+  });
+
+  // Default = latest year
+  selectedYear = availableYears[0];
+  select.value = selectedYear;
+
+  select.addEventListener("change", e => {
+    selectedYear = e.target.value;
+    updateDashboard(
+      document.getElementById("provinceSelect").value
+    );
+  });
+}
 
   function initProvinceSelector() {
     const select = document.getElementById("provinceSelect");
@@ -229,9 +372,16 @@
       ? usersData
       : usersData.filter(p => p.province_code == provinceCode);
 
-    const usageRows = provinceCode === "ALL"
-      ? usageData
-      : usageData.filter(p => p.province_code == provinceCode);
+      let usageRows = usageData;
+
+// filter by province
+if (provinceCode !== "ALL") {
+  usageRows = usageRows.filter(r => r.province_code == provinceCode);
+}
+
+// filter by year
+usageRows = usageRows.filter(r => r.year == selectedYear);
+
 
     const totals = {};
     categories.forEach(c => totals[c] = { users: 0, kwh: 0 });
