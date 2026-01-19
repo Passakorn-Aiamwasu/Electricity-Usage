@@ -157,6 +157,10 @@
     <div class="card">
       <canvas id="usageChart" height="140"></canvas>
     </div>
+    <div class="card">
+        <canvas id="usagePieChart" height="200"></canvas>
+    </div>
+      
 
     <div class="card">
       <table id="dataTable">
@@ -174,6 +178,7 @@
 </main>
 
 <script>
+    let pieChart;
   const USER_FILE = "electricity_users_en.json";
   const USAGE_FILE = "electricity_usages_en.json";
 
@@ -257,6 +262,7 @@
         : userRows[0].province_name;
 
     updateChart(totals);
+    updatePieChart(totals);
     updateTable(totals);
   }
 
@@ -292,6 +298,52 @@
       }
     });
   }
+
+  function updatePieChart(totals) {
+  const ctx = document.getElementById("usagePieChart");
+
+  const values = categories.map(c => totals[c].kwh);
+  const totalKwh = values.reduce((a, b) => a + b, 0);
+
+  const maxCategory = categories.reduce((max, c) =>
+    totals[c].kwh > totals[max].kwh ? c : max
+  );
+
+  const colors = categories.map(c =>
+    c === maxCategory ? "#dc2626" : "#60a5fa"
+  );
+
+  if (pieChart) pieChart.destroy();
+
+  pieChart = new Chart(ctx, {
+    type: "pie",
+    data: {
+      labels: categories.map(c => c.replace("_", " ")),
+      datasets: [{
+        data: values,
+        backgroundColor: colors
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const value = ctx.raw;
+              const percent = ((value / totalKwh) * 100).toFixed(1);
+              return `${ctx.label}: ${percent}% (${value.toLocaleString()} kWh)`;
+            }
+          }
+        },
+        legend: {
+          position: "bottom"
+        }
+      }
+    }
+  });
+}
+
 
   function updateTable(totals) {
     const tbody = document.querySelector("#dataTable tbody");
