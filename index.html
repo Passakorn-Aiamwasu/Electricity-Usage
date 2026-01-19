@@ -2,20 +2,24 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Electricity Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
   <style>
     :root {
-      --primary: #1e88e5;
-      --bg: #f5f7fa;
+      --bg: #f4f6f8;
       --card: #ffffff;
-      --text: #333;
+      --primary: #2563eb;
+      --text: #1f2937;
+      --muted: #6b7280;
     }
 
     * {
       box-sizing: border-box;
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: system-ui, -apple-system, sans-serif;
     }
 
     body {
@@ -25,31 +29,74 @@
     }
 
     header {
-      background: var(--primary);
-      color: white;
-      padding: 1rem;
-      text-align: center;
+      padding: 1rem 1.5rem;
+      background: var(--card);
+      border-bottom: 1px solid #e5e7eb;
     }
 
-    .dashboard {
-      padding: 1rem;
+    header h1 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    main {
+      padding: 1.5rem;
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    /* KPI cards */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 1rem;
     }
 
     .card {
       background: var(--card);
-      border-radius: 8px;
+      border-radius: 10px;
       padding: 1rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
     }
 
-    .card h2 {
-      margin-top: 0;
-      font-size: 1.1rem;
-      border-bottom: 1px solid #ddd;
-      padding-bottom: 0.5rem;
+    .card h3 {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .card p {
+      margin: 0.4rem 0 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+    }
+
+    /* Controls */
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    select {
+      padding: 0.5rem 0.75rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #d1d5db;
+    }
+
+    /* Charts & table */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    @media (min-width: 900px) {
+      .grid {
+        grid-template-columns: 2fr 1fr;
+      }
     }
 
     table {
@@ -59,129 +106,198 @@
     }
 
     th, td {
-      padding: 0.4rem;
-      border-bottom: 1px solid #eee;
+      padding: 0.5rem;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: right;
+    }
+
+    th:first-child,
+    td:first-child {
       text-align: left;
     }
 
     th {
-      background: #f0f0f0;
-    }
-
-    .stat {
-      font-size: 2rem;
-      font-weight: bold;
-      color: var(--primary);
-    }
-
-    @media (max-width: 600px) {
-      header h1 {
-        font-size: 1.2rem;
-      }
+      background: #f9fafb;
     }
   </style>
 </head>
-
 <body>
 
 <header>
-  <h1>Electricity Usage Dashboard</h1>
+  <h1>⚡ Electricity Consumption Dashboard</h1>
 </header>
 
-<section class="dashboard">
+<main>
+  <!-- KPI section -->
+  <section class="kpis">
+    <div class="card">
+      <h3>Total Users</h3>
+      <p id="totalUsers">–</p>
+    </div>
+    <div class="card">
+      <h3>Total Usage (kWh)</h3>
+      <p id="totalUsage">–</p>
+    </div>
+    <div class="card">
+      <h3>Selected Province</h3>
+      <p id="provinceName">All</p>
+    </div>
+  </section>
 
-  <div class="card">
-    <h2>Total Users</h2>
-    <div id="totalUsers" class="stat">–</div>
-  </div>
+  <!-- Controls -->
+  <section class="controls">
+    <label>
+      Province:
+      <select id="provinceSelect"></select>
+    </label>
+  </section>
 
-  <div class="card">
-    <h2>Total Consumption (kWh)</h2>
-    <div id="totalKwh" class="stat">–</div>
-  </div>
+  <!-- Charts + Table -->
+  <section class="grid">
+    <div class="card">
+      <canvas id="usageChart" height="140"></canvas>
+    </div>
 
-  <div class="card">
-    <h2>Total Cost ($)</h2>
-    <div id="totalCost" class="stat">–</div>
-  </div>
-
-  <div class="card">
-    <h2>Users</h2>
-    <table id="usersTable">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>City</th>
-          <th>Plan</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <div class="card">
-    <h2>Electricity Usage</h2>
-    <table id="usageTable">
-      <thead>
-        <tr>
-          <th>User ID</th>
-          <th>Month</th>
-          <th>kWh</th>
-          <th>Cost ($)</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-</section>
+    <div class="card">
+      <table id="dataTable">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Users</th>
+            <th>kWh</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</main>
 
 <script>
-  async function loadDashboard() {
-    const [users, usages] = await Promise.all([
-      fetch("electricity_users_en.json").then(r => r.json()),
-      fetch("electricity_usages_en.json").then(r => r.json())
-    ]);
+  const USER_FILE = "electricity_users_en.json";
+  const USAGE_FILE = "electricity_usages_en.json";
 
-    // --- Summary stats ---
-    document.getElementById("totalUsers").textContent = users.length;
+  const categories = [
+    "residential",
+    "small_business",
+    "medium_business",
+    "large_business",
+    "specialized_business",
+    "public_electricity",
+    "temporary_electricity",
+    "ev_charging"
+  ];
 
-    const totalKwh = usages.reduce((sum, u) => sum + u.kwh, 0);
-    const totalCost = usages.reduce((sum, u) => sum + u.cost, 0);
+  let usersData = [];
+  let usageData = [];
+  let chart;
 
-    document.getElementById("totalKwh").textContent = totalKwh.toFixed(0);
-    document.getElementById("totalCost").textContent = totalCost.toFixed(2);
+  Promise.all([
+    fetch(USER_FILE).then(r => r.json()),
+    fetch(USAGE_FILE).then(r => r.json())
+  ]).then(([users, usage]) => {
+    usersData = users;
+    usageData = usage.Sheet1;
 
-    // --- Users table ---
-    const usersBody = document.querySelector("#usersTable tbody");
-    users.forEach(u => {
-      usersBody.innerHTML += `
-        <tr>
-          <td>${u.name}</td>
-          <td>${u.city}</td>
-          <td>${u.plan}</td>
-        </tr>
-      `;
+    initProvinceSelector();
+    updateDashboard("ALL");
+  });
+
+  function initProvinceSelector() {
+    const select = document.getElementById("provinceSelect");
+    select.innerHTML = `<option value="ALL">All Provinces</option>`;
+
+    usersData.forEach(p => {
+      const opt = document.createElement("option");
+      opt.value = p.province_code;
+      opt.textContent = p.province_name;
+      select.appendChild(opt);
     });
 
-    // --- Usage table ---
-    const usageBody = document.querySelector("#usageTable tbody");
-    usages.forEach(u => {
-      usageBody.innerHTML += `
-        <tr>
-          <td>${u.user_id}</td>
-          <td>${u.month}</td>
-          <td>${u.kwh}</td>
-          <td>${u.cost.toFixed(2)}</td>
-        </tr>
-      `;
+    select.addEventListener("change", e => {
+      updateDashboard(e.target.value);
     });
   }
 
-  loadDashboard().catch(err => {
-    alert("Failed to load data. Make sure JSON files are served via a web server.");
-    console.error(err);
-  });
+  function updateDashboard(provinceCode) {
+    const userRows = provinceCode === "ALL"
+      ? usersData
+      : usersData.filter(p => p.province_code == provinceCode);
+
+    const usageRows = provinceCode === "ALL"
+      ? usageData
+      : usageData.filter(p => p.province_code == provinceCode);
+
+    const totals = {};
+    categories.forEach(c => totals[c] = { users: 0, kwh: 0 });
+
+    userRows.forEach(r => {
+      categories.forEach(c => {
+        totals[c].users += r[`${c}_count`] || 0;
+      });
+    });
+
+    usageRows.forEach(r => {
+      categories.forEach(c => {
+        totals[c].kwh += r[`${c}_kwh`] || 0;
+      });
+    });
+
+    // KPI
+    document.getElementById("totalUsers").textContent =
+      Object.values(totals).reduce((a, b) => a + b.users, 0).toLocaleString();
+
+    document.getElementById("totalUsage").textContent =
+      Object.values(totals).reduce((a, b) => a + b.kwh, 0)
+        .toLocaleString() + " kWh";
+
+    document.getElementById("provinceName").textContent =
+      provinceCode === "ALL"
+        ? "All Provinces"
+        : userRows[0].province_name;
+
+    updateChart(totals);
+    updateTable(totals);
+  }
+
+  function updateChart(totals) {
+    const ctx = document.getElementById("usageChart");
+
+    const data = categories.map(c => totals[c].kwh);
+
+    if (chart) chart.destroy();
+
+    chart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: categories.map(c => c.replace("_", " ")),
+        datasets: [{
+          label: "Electricity Usage (kWh)",
+          data,
+          backgroundColor: "#2563eb"
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  function updateTable(totals) {
+    const tbody = document.querySelector("#dataTable tbody");
+    tbody.innerHTML = "";
+
+    categories.forEach(c => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${c.replace("_", " ")}</td>
+        <td>${totals[c].users.toLocaleString()}</td>
+        <td>${totals[c].kwh.toLocaleString()}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 </script>
 
 </body>
