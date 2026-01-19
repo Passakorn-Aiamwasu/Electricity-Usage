@@ -261,9 +261,17 @@
   }
 
   function updateChart(totals) {
+    const maxCategory = categories.reduce((max, c) => totals[c].kwh > totals[max].kwh ? c : max
+    );
+
     const ctx = document.getElementById("usageChart");
 
     const data = categories.map(c => totals[c].kwh);
+
+    const colors = categories.map(c =>
+    c === maxCategory ? "#dc2626" : "#2563eb" // red for max
+    );
+
 
     if (chart) chart.destroy();
 
@@ -272,10 +280,11 @@
       data: {
         labels: categories.map(c => c.replace("_", " ")),
         datasets: [{
-          label: "Electricity Usage (kWh)",
-          data,
-          backgroundColor: "#2563eb"
+        label: "Electricity Usage (kWh)",
+        data,
+        backgroundColor: colors
         }]
+
       },
       options: {
         responsive: true,
