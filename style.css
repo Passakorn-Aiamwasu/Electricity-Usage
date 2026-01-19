@@ -1,0 +1,110 @@
+:root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --primary: #2563eb;
+    --text: #1f2937;
+    --muted: #6b7280;
+  }
+
+  * {
+    box-sizing: border-box;
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  header {
+    padding: 1rem 1.5rem;
+    background: var(--card);
+    border-bottom: 1px solid #e5e7eb;
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: 1.4rem;
+  }
+
+  main {
+    padding: 1.5rem;
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  /* KPI cards */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
+  }
+
+  .card {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+
+  .card h3 {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+
+  .card p {
+    margin: 0.4rem 0 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+  }
+
+  /* Controls */
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  select {
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    border-radius: 6px;
+    border: 1px solid #d1d5db;
+  }
+
+  /* Charts & table */
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 900px) {
+    .grid {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+
+  th, td {
+    padding: 0.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    text-align: right;
+  }
+
+  th:first-child,
+  td:first-child {
+    text-align: left;
+  }
+
+  th {
+    background: #f9fafb;
+  }
